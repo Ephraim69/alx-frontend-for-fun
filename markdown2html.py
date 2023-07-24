@@ -1,37 +1,76 @@
 #!/usr/bin/python3
 """
-Write a script markdown2html.py that takes an argument 2 strings:
-    First argument is the name of the Markdown file
-    Second argument is the output file name
+markdown2html.py
+Module that converts Markdown to HTML
 """
 
-
-import sys
 import os
+import sys
+import hashlib
+import re
 
 
-def main():
+def markdown2html(md_filename, html_filename):
+    """
+    A function that converts Markdown to HTML
+    """
     if len(sys.argv) < 3:
         print("Usage: ./markdown2html.py README.md README.html", file=sys.stderr)
         exit(1)
-
-    if not os.path.isfile(sys.argv[1]):
-        print(f"Missing {sys.argv[1]}", file=sys.stderr)
+    if not os.path.isfile(md_filename):
+        print("Missing {}".format(md_filename), file=sys.stderr)
         exit(1)
 
-    with open(sys.argv[1]) as markdown:
-        with open(sys.argv[2], "w") as html:
-            for tag in markdown:
-                length = len(tag)
-                heading = tag.lstrip("#")
-                html_heading = length - len(heading)
+    with open(md_filename, 'r') as md_file, open(html_filename, 'w') as html_file:
+        lines = md_file.readlines()
+        while len(lines) > 0:
+            line = lines.pop(0)
+            hash_tag, content = line.split(' ', 1)
+            # handle headings
+            if line.startswith('#'):
+                level = len(hash_tag)
+                content = content.strip()
+                html_file.write('<h{}>{}</h{}>\n'.format(level, content, level))
+            # handle unordered lists
+            elif line.startswith('- '):
+                html_file.write('<ul>\n')
+                while line.startswith('- '):
+                    content = line[2:].strip()
+                    html_file.write('<li>{}</li>\n'.format(content))
+                    if len(lines) > 0:
+                        line = lines.pop(0)
+                    else:
+                        break
+                html_file.write('</ul>\n')
+            # handle ordered lists
+            elif line.startswith('* '):
+                html_file.write('<ol>\n')
+                while line.startswith('* '):
+                    content = line[2:].strip()
+                    html_file.write('<li>{}</li>\n'.format(content))
+                    if len(lines) > 0:
+                        line = lines.pop(0)
+                    else:
+                        break
+                html_file.write('</ol>\n')
+            # handle simple text
+            else:
+                html_file.write('<p>\n')
+                while not line.startswith(('#', '-', '*')):
+                    content = line.strip().replace('\n', '<br/>\n')
+                    html_file.write('{}\n'.format(content))
+                    if len(lines) > 0:
+                        line = lines.pop(0)
+                    else:
+                        break
+                html_file.write('</p>\n')
+            # handle bold and emphasis text
+            line = line.replace('**', '<b>', 1).replace('**', '</b>', 1)
+            line = line.replace('__', '<em>', 1).replace('__', '</em>', 1)
+            # handle special syntax
+            line = re.sub(r'\[\[(.+?)\]\]', lambda m: hashlib.md5(m.group(1).encode()).hexdigest(), line)
+            line = re.sub(r'\(\((.+?)\)\)', lambda m: m.group(1).replace('c', '').replace('C', ''), line)
 
-                if 1 <= html_heading <= 6:
-                    tag = "<h{}>".format(html_heading) + heading.strip() + '</h{}>\n'.format(html_heading)
-                    html.write(tag)
 
-    exit(0)
-
-
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    markdown2html(sys.argv[1], sys.argv[2])
