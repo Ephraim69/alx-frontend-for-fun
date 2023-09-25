@@ -10,31 +10,16 @@ $list_to_sort: john anna zoe kim felicia carrie;
         $sorted: true;
         @for $i from 1 through $len - 1 {
             // If this item > next item, swap them
-            @if str-slug(nth($list, $i)) > str-slug(nth($list, $i + 1)) {
+            @if nth($list, $i) > nth($list, $i + 1) {
+                $temp: nth($list, $i);
                 $list: set-nth($list, $i, nth($list, $i + 1));
-                $list: set-nth($list, $i + 1, nth($list, $i));
+                $list: set-nth($list, $i + 1, $temp);
                 $sorted: false;
             }
         }
     }
 
     @return $list;
-}
-
-// A helper function to slugify string for better comparison
-@function str-slug($string) {
-    @return to-lower-case(str-replace($string, " ", "-"));
-}
-
-// A helper function to replace string
-@function str-replace($string, $search, $replace: "") {
-    $index: str-index($string, $search);
-  
-    @if $index {
-      @return str-slice($string, 1, $index - 1) + $replace + str-replace(str-slice($string, $index + str-length($search)), $search, $replace);
-    }
-  
-    @return $string;
 }
 
 // Print the sorted list
